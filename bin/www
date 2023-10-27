@@ -1,0 +1,108 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require("../app");
+var debug = require("debug")("first-express-app:server");
+var http = require("http");
+
+// Import the 'db' object from the 'index.js' file in the 'models/definitions' directory.
+var { db } = require("../models/definitions/index.js");
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || "4800");
+app.set("port", port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+// Synchronize the database schema with the defined models.
+db.sequelize
+  .sync({ logging: false })
+  .then(() => {
+    // Success callback when the database synchronization is complete.
+
+    // Log a message to the console indicating that the database has been successfully synchronized.
+    console.log("Synced db");
+
+    // Start the server to listen on the specified 'port'.
+    server.listen(port);
+
+    // Set up an event listener to handle server errors by calling the 'onError' function.
+    server.on("error", onError);
+
+    // Set up an event listener to handle the server being in a 'listening' state by calling the 'onListening' function.
+    server.on("listening", onListening);
+  })
+  .catch((err) => {
+    // Error callback if an error occurs during database synchronization.
+
+    // Log an error message to the console, including the error message from the caught error.
+    console.log("Failed to sync db:: " + err.message);
+  });
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== "listen") {
+    throw error;
+  }
+
+  var bind = typeof port === "string" ? "Pipe " + port : "Port " + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case "EACCES":
+      console.error(bind + " requires elevated privileges");
+      process.exit(1);
+      break;
+    case "EADDRINUSE":
+      console.error(bind + " is already in use");
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === "string" ? "pipe " + addr : "port " + addr.port;
+  debug("Listening on " + bind);
+}
